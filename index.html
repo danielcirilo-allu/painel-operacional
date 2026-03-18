@@ -2,95 +2,118 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel Operacional</title>
 
 <style>
 body {
-  margin: 0;
-  font-family: Arial;
-  background: #0b1320;
-  color: white;
+    margin: 0;
+    font-family: Arial;
+    background: #0b1622;
+    color: #fff;
 }
 
 /* HEADER */
 .header {
-  position: sticky;
-  top: 0;
-  background: #020817;
-  padding: 15px;
-  text-align: center;
-  font-size: 26px;
-  font-weight: bold;
-  z-index: 1000;
+    background: #020c1b;
+    padding: 15px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
 }
 
-/* ALERTA */
-.alerta {
-  position: sticky;
-  top: 60px;
-  background: #7f1d1d;
-  padding: 10px;
-  text-align: center;
+.status-bar {
+    background: #8b1c1c;
+    text-align: center;
+    padding: 5px;
 }
 
 /* CARDS */
 .cards {
-  position: sticky;
-  top: 110px;
-  display: flex;
-  gap: 20px;
-  padding: 20px;
-  background: #0b1320;
-  z-index: 999;
+    display: flex;
+    gap: 20px;
+    padding: 20px;
 }
 
 .card {
-  flex: 1;
-  background: #1e293b;
-  padding: 20px;
-  border-radius: 10px;
-  text-align: center;
+    flex: 1;
+    background: #1f2a3a;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
 }
 
-.valor {
-  font-size: 40px;
+.card h2 {
+    margin: 0;
+    font-size: 18px;
 }
 
-.verde { color: #22c55e; }
-.amarelo { color: #facc15; }
-.vermelho { color: #ef4444; }
+.card p {
+    font-size: 32px;
+    margin: 10px 0 0;
+}
+
+.green { color: #00ff88; }
+.yellow { color: #ffd000; }
+.red { color: #ff4d4d; }
 
 /* TABELA */
-.tabela-container {
-  margin: 0 20px;
+.table-container {
+    height: 500px;
+    overflow: hidden;
+    position: relative;
 }
 
-.tabela-head {
-  width: 100%;
-  border-collapse: collapse;
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
 }
 
-.tabela-head th {
-  background: #1e293b;
-  padding: 10px;
+thead {
+    position: sticky;
+    top: 0;
+    background: #1f2a3a;
+    z-index: 2;
 }
 
-.tabela-scroll {
-  height: 400px;
-  overflow: hidden;
-  position: relative;
+th, td {
+    padding: 10px;
+    text-align: left;
+    white-space: nowrap;
+    border-bottom: 1px solid #333;
 }
 
-.tabela-scroll table {
-  width: 100%;
-  border-collapse: collapse;
-  position: absolute;
+th:nth-child(1), td:nth-child(1) { width: 45%; }
+th:nth-child(2), td:nth-child(2) { width: 15%; }
+th:nth-child(3), td:nth-child(3) { width: 13%; }
+th:nth-child(4), td:nth-child(4) { width: 13%; }
+th:nth-child(5), td:nth-child(5) { width: 14%; }
+
+tbody {
+    display: block;
 }
 
-td {
-  padding: 8px;
-  border-bottom: 1px solid #333;
-  text-align: center;
+thead, tbody tr {
+    display: table;
+    width: 100%;
+}
+
+/* STATUS CORES */
+.ok { color: #00ff88; }
+.atencao { color: #ffd000; }
+.critico { color: #ff4d4d; }
+
+/* SCROLL AUTO */
+.scroll {
+    position: absolute;
+    width: 100%;
+    animation: scrollUp 30s linear infinite;
+}
+
+@keyframes scrollUp {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
 }
 </style>
 </head>
@@ -98,165 +121,92 @@ td {
 <body>
 
 <div class="header">📦 PAINEL OPERACIONAL</div>
-<div id="alerta" class="alerta">Carregando...</div>
+<div class="status-bar" id="statusGeral">Carregando...</div>
 
 <div class="cards">
-  <div class="card">
-    <h3>Estoque</h3>
-    <div id="estoque" class="valor verde">0</div>
-  </div>
-
-  <div class="card">
-    <h3>Fila</h3>
-    <div id="fila" class="valor amarelo">0</div>
-  </div>
-
-  <div class="card">
-    <h3>Backlog</h3>
-    <div id="backlog" class="valor">0</div>
-  </div>
-
-  <div class="card">
-    <h3>Atrasos</h3>
-    <div id="atrasos" class="valor vermelho">0</div>
-  </div>
+    <div class="card"><h2>Estoque</h2><p id="estoque" class="green">0</p></div>
+    <div class="card"><h2>Fila</h2><p id="fila" class="yellow">0</p></div>
+    <div class="card"><h2>Backlog</h2><p id="backlog">0</p></div>
+    <div class="card"><h2>Atrasos</h2><p id="atrasos" class="red">0</p></div>
 </div>
 
-<div class="tabela-container">
-
-  <!-- CABEÇALHO FIXO -->
-  <table class="tabela-head">
-    <thead>
-      <tr>
-        <th>Produto</th>
-        <th>Status</th>
-        <th>Fila</th>
-        <th>Backlog</th>
-        <th>Atrasos</th>
-      </tr>
-    </thead>
-  </table>
-
-  <!-- CORPO QUE ROLA -->
-  <div class="tabela-scroll">
+<div class="table-container">
     <table>
-      <tbody id="ranking"></tbody>
+        <thead>
+            <tr>
+                <th>Produto</th>
+                <th>Status</th>
+                <th>Fila</th>
+                <th>Backlog</th>
+                <th>Atrasos</th>
+            </tr>
+        </thead>
+        <tbody id="tabela" class="scroll"></tbody>
     </table>
-  </div>
-
 </div>
 
 <script>
-const URL = "https://script.google.com/macros/s/AKfycbyalfZ4oBC_32Bxf_rie3jUO_uANhVp9KYEeYfSxY62ZzhbGcCOgb_v_QDzhzcvs8jv/exec";
+const API = "https://script.google.com/macros/s/AKfycbya5HMpg-8JEHdbyfRAp7Czs5d0TPqsEISu3YjtAufL1B9wm2PDmALxzWrCgT-uATxa/exec";
 
-let ultimoHash = null;
-let scrollPos = 0;
-let alturaCriticos = 0;
+async function carregar() {
+    try {
+        const res = await fetch(API);
+        const data = await res.json();
 
-/* =========================
-   BUSCA DADOS
-========================= */
-function carregarDados() {
-  const script = document.createElement("script");
-  script.src = URL + "?callback=render&ts=" + new Date().getTime();
-  document.body.appendChild(script);
-}
+        let estoque = 0, fila = 0, backlog = 0, atrasos = 0;
 
-/* =========================
-   RENDERIZA
-========================= */
-function render(data) {
+        let criticos = [];
+        let outros = [];
 
-  if (data.hash === ultimoHash) return;
-  ultimoHash = data.hash;
+        data.forEach(item => {
+            estoque += item.estoque;
+            fila += item.fila;
+            backlog += item.backlog;
+            atrasos += item.atrasos;
 
-  document.getElementById("estoque").innerText = data.totais.estoque;
-  document.getElementById("fila").innerText = data.totais.fila;
-  document.getElementById("backlog").innerText = data.totais.backlog;
-  document.getElementById("atrasos").innerText = data.totais.atrasos;
+            let status = "ok";
+            if (item.atrasos > 50) status = "critico";
+            else if (item.atrasos > 10) status = "atencao";
 
-  document.getElementById("alerta").innerText =
-    "🚨 STATUS: " + data.status;
+            let row = `
+                <tr>
+                    <td>${item.produto}</td>
+                    <td class="${status}">${status.toUpperCase()}</td>
+                    <td>${item.fila}</td>
+                    <td>${item.backlog}</td>
+                    <td>${item.atrasos}</td>
+                </tr>
+            `;
 
-  let criticos = [];
-  let outros = [];
+            if (status === "critico") criticos.push(row);
+            else outros.push(row);
+        });
 
-  data.ranking.forEach(r => {
-    if (r.status === "CRITICO") {
-      criticos.push(r);
-    } else {
-      outros.push(r);
+        document.getElementById("estoque").innerText = estoque;
+        document.getElementById("fila").innerText = fila;
+        document.getElementById("backlog").innerText = backlog;
+        document.getElementById("atrasos").innerText = atrasos;
+
+        let statusGeral = "OK";
+        if (atrasos > 200) statusGeral = "CRÍTICO";
+        else if (atrasos > 50) statusGeral = "ATENÇÃO";
+
+        document.getElementById("statusGeral").innerText = "STATUS: " + statusGeral;
+
+        document.getElementById("tabela").innerHTML =
+            criticos.join("") + outros.join("") +
+            criticos.join("") + outros.join(""); // loop infinito
+
+    } catch (e) {
+        console.error(e);
     }
-  });
-
-  let html = "";
-
-  // 🔴 CRÍTICOS FIXOS
-  criticos.forEach(r => {
-    html += `
-      <tr class="critico" style="color:#ef4444; font-weight:bold; background:#3f0a0a">
-        <td>🔥 ${r.produto}</td>
-        <td>${r.status}</td>
-        <td>${r.fila}</td>
-        <td>${r.backlog}</td>
-        <td>${r.atrasos}</td>
-      </tr>
-    `;
-  });
-
-  // 🔽 OUTROS
-  outros.forEach(r => {
-    let cor =
-      r.status === "ATENCAO" ? "#facc15" : "#22c55e";
-
-    html += `
-      <tr>
-        <td style="color:${cor}">${r.produto}</td>
-        <td style="color:${cor}">${r.status}</td>
-        <td>${r.fila}</td>
-        <td>${r.backlog}</td>
-        <td>${r.atrasos}</td>
-      </tr>
-    `;
-  });
-
-  document.getElementById("ranking").innerHTML = html;
-
-  // recalcula altura dos críticos
-  setTimeout(() => {
-    alturaCriticos = 0;
-    document.querySelectorAll(".critico").forEach(el => {
-      alturaCriticos += el.offsetHeight;
-    });
-  }, 200);
 }
 
-/* =========================
-   SCROLL INTELIGENTE
-========================= */
-function scrollTabela() {
-  const tabela = document.querySelector(".tabela-scroll table");
-  if (!tabela) return;
+/* atualização inteligente */
+setInterval(carregar, 10000);
 
-  scrollPos += 0.3;
-
-  const limite = tabela.scrollHeight - alturaCriticos;
-
-  if (scrollPos >= limite) {
-    scrollPos = 0;
-  }
-
-  tabela.style.transform =
-    `translateY(-${scrollPos}px)`;
-}
-
-/* =========================
-   INIT
-========================= */
-setInterval(scrollTabela, 20);
-setInterval(carregarDados, 15000);
-carregarDados();
-
+/* inicial */
+carregar();
 </script>
 
 </body>
