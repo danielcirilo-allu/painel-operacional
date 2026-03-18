@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Painel Operacional</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0b1320;
+  color: white;
+}
+
+/* HEADER */
+.header {
+  position: sticky;
+  top: 0;
+  background: #020817;
+  padding: 15px;
+  text-align: center;
+  font-size: 26px;
+  font-weight: bold;
+  z-index: 1000;
+}
+
+/* ALERTA */
+.alerta {
+  position: sticky;
+  top: 60px;
+  background: #7f1d1d;
+  padding: 10px;
+  text-align: center;
+}
+
+/* CARDS */
+.cards {
+  position: sticky;
+  top: 110px;
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background: #0b1320;
+  z-index: 999;
+}
+
+.card {
+  flex: 1;
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.valor {
+  font-size: 40px;
+}
+
+.verde { color: #22c55e; }
+.amarelo { color: #facc15; }
+.vermelho { color: #ef4444; }
+
+/* TABELA */
+.tabela-container {
+  margin: 0 20px;
+}
+
+.tabela-head {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabela-head th {
+  background: #1e293b;
+  padding: 10px;
+}
+
+.tabela-scroll {
+  height: 400px;
+  overflow: hidden;
+  position: relative;
+}
+
+.tabela-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  position: absolute;
+}
+
+td {
+  padding: 8px;
+  border-bottom: 1px solid #333;
+  text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">📦 PAINEL OPERACIONAL</div>
+<div id="alerta" class="alerta">Carregando...</div>
+
+<div class="cards">
+  <div class="card">
+    <h3>Estoque</h3>
+    <div id="estoque" class="valor verde">0</div>
+  </div>
+
+  <div class="card">
+    <h3>Fila</h3>
+    <div id="fila" class="valor amarelo">0</div>
+  </div>
+
+  <div class="card">
+    <h3>Backlog</h3>
+    <div id="backlog" class="valor">0</div>
+  </div>
+
+  <div class="card">
+    <h3>Atrasos</h3>
+    <div id="atrasos" class="valor vermelho">0</div>
+  </div>
+</div>
+
+<div class="tabela-container">
+
+  <!-- CABEÇALHO FIXO -->
+  <table class="tabela-head">
+    <thead>
+      <tr>
+        <th>Produto</th>
+        <th>Status</th>
+        <th>Fila</th>
+        <th>Backlog</th>
+        <th>Atrasos</th>
+      </tr>
+    </thead>
+  </table>
+
+  <!-- CORPO QUE ROLA -->
+  <div class="tabela-scroll">
+    <table>
+      <tbody id="ranking"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const URL = "https://script.google.com/macros/s/AKfycbyalfZ4oBC_32Bxf_rie3jUO_uANhVp9KYEeYfSxY62ZzhbGcCOgb_v_QDzhzcvs8jv/exec";
+
+let ultimoHash = null;
+let scrollPos = 0;
+let alturaCriticos = 0;
+
+/* =========================
+   BUSCA DADOS
+========================= */
+function carregarDados() {
+  const script = document.createElement("script");
+  script.src = URL + "?callback=render&ts=" + new Date().getTime();
+  document.body.appendChild(script);
+}
+
+/* =========================
+   RENDERIZA
+========================= */
+function render(data) {
+
+  if (data.hash === ultimoHash) return;
+  ultimoHash = data.hash;
+
+  document.getElementById("estoque").innerText = data.totais.estoque;
+  document.getElementById("fila").innerText = data.totais.fila;
+  document.getElementById("backlog").innerText = data.totais.backlog;
+  document.getElementById("atrasos").innerText = data.totais.atrasos;
+
+  document.getElementById("alerta").innerText =
+    "🚨 STATUS: " + data.status;
+
+  let criticos = [];
+  let outros = [];
+
+  data.ranking.forEach(r => {
+    if (r.status === "CRITICO") {
+      criticos.push(r);
+    } else {
+      outros.push(r);
+    }
+  });
+
+  let html = "";
+
+  // 🔴 CRÍTICOS FIXOS
+  criticos.forEach(r => {
+    html += `
+      <tr class="critico" style="color:#ef4444; font-weight:bold; background:#3f0a0a">
+        <td>🔥 ${r.produto}</td>
+        <td>${r.status}</td>
+        <td>${r.fila}</td>
+        <td>${r.backlog}</td>
+        <td>${r.atrasos}</td>
+      </tr>
+    `;
+  });
+
+  // 🔽 OUTROS
+  outros.forEach(r => {
+    let cor =
+      r.status === "ATENCAO" ? "#facc15" : "#22c55e";
+
+    html += `
+      <tr>
+        <td style="color:${cor}">${r.produto}</td>
+        <td style="color:${cor}">${r.status}</td>
+        <td>${r.fila}</td>
+        <td>${r.backlog}</td>
+        <td>${r.atrasos}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("ranking").innerHTML = html;
+
+  // recalcula altura dos críticos
+  setTimeout(() => {
+    alturaCriticos = 0;
+    document.querySelectorAll(".critico").forEach(el => {
+      alturaCriticos += el.offsetHeight;
+    });
+  }, 200);
+}
+
+/* =========================
+   SCROLL INTELIGENTE
+========================= */
+function scrollTabela() {
+  const tabela = document.querySelector(".tabela-scroll table");
+  if (!tabela) return;
+
+  scrollPos += 0.3;
+
+  const limite = tabela.scrollHeight - alturaCriticos;
+
+  if (scrollPos >= limite) {
+    scrollPos = 0;
+  }
+
+  tabela.style.transform =
+    `translateY(-${scrollPos}px)`;
+}
+
+/* =========================
+   INIT
+========================= */
+setInterval(scrollTabela, 20);
+setInterval(carregarDados, 15000);
+carregarDados();
+
+</script>
+
+</body>
+</html>
